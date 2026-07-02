@@ -1,0 +1,43 @@
+# Target libraries (system under test) and mutation scope.
+#
+# Versions below are the latest stable on PyPI as of 2026-07-01, pinned for
+# reproducibility. Each target library is installed in its OWN isolated
+# environment during experiments (a per-library venv or Docker image), separate
+# from this pipeline's venv. That isolation matters: the pipeline itself depends
+# on click (via typer), so testing click-the-target in the pipeline venv would
+# force click to typer's required version, not the pin recorded here.
+#
+# Module-selection rule for mutation testing, pre-specified to avoid cherry-picking
+# (Menzel condition 4): select the 3 to 5 modules with the highest cyclomatic
+# complexity, measured with `radon cc`, excluding test files and __init__.py.
+# Run radon first, then record the chosen modules below BEFORE any mutation run.
+
+selection_rule: "top 3-5 modules by cyclomatic complexity (radon cc), excluding tests and __init__.py"
+
+libraries:
+  - name: click
+    version: "8.4.2"
+    repo: https://github.com/pallets/click
+    mutation_modules: []      # fill after running radon, before mutation runs
+
+  - name: jinja2
+    version: "3.1.6"
+    repo: https://github.com/pallets/jinja
+    mutation_modules: []
+
+  - name: markdown
+    version: "3.10.2"
+    repo: https://github.com/Python-Markdown/markdown
+    mutation_modules: []
+
+  - name: python-slugify
+    version: "8.0.4"
+    repo: https://github.com/un33k/python-slugify
+    mutation_modules: []
+
+  - name: more-itertools
+    version: "11.1.0"
+    repo: https://github.com/more-itertools/more-itertools
+    mutation_modules: []
+
+# Finalize the set (target 5 to 8 libraries) with your supervisor.

@@ -1,0 +1,14 @@
+# Loose pins to start. Freeze exact versions before the first real run:
+#   pip freeze > requirements.lock
+pytest>=8,<9
+coverage>=7,<8
+mutmut>=3,<4
+radon>=6,<7
+anthropic>=0.40
+openai>=1.50
+ollama>=0.3
+pandas>=2.2
+scipy>=1.14
+statsmodels>=0.14
+pyyaml>=6
+typer>=0.12

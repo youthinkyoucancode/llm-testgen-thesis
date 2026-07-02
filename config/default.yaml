@@ -1,0 +1,48 @@
+# Default configuration for the LLM test-generation pipeline.
+# These are starting points. Finalize the model and thresholds with your supervisor.
+
+model:
+  # Primary model: open-weights, run locally via Ollama. Free and reproducible.
+  provider: ollama            # ollama | anthropic | openai
+  name: qwen2.5-coder         # open model id, or a closed model id if provider changes
+  temperature: 0.2
+  max_output_tokens: 2048
+  # This dev laptop's GPU (MX250, 2 GB) crashes Ollama's CUDA runner, so force
+  # CPU-only inference here. On a real GPU (e.g. Colab T4) raise this or remove it.
+  num_gpu: 0
+  # Optional second model for a robustness comparison (costs money if closed):
+  # provider: anthropic
+  # name: claude-sonnet-4-6
+
+generation:
+  runs_per_module: 3          # repeat to average over LLM nondeterminism
+  seed: 42                    # applied where the backend supports it
+
+loop:
+  max_iterations: 3           # bounded refinement rounds (Menzel condition 3)
+  token_budget_per_module: 60000
+  stop_on_no_gain: true       # stop early if a round adds no coverage and no mutant kills
+
+filters:
+  parse_check: true
+  execute_check: true
+  coverage_gain: true
+  mutation_kill: true
+
+coverage:
+  measure_branches: true
+
+mutation:
+  tool: mutmut                # mutmut | cosmic-ray
+  modules_per_library_min: 3  # see selection rule in libraries.yaml (Menzel condition 4)
+  modules_per_library_max: 5
+
+paths:
+  results_dir: experiments/results
+  figures_dir: experiments/figures
+
+logging:
+  level: INFO
+  log_tokens: true
+  log_model_id: true
+  log_prompt_version: true

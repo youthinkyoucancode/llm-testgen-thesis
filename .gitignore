@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.coverage
+htmlcov/
+.mutmut-cache
+.pytest_cache/
+experiments/results/
+experiments/figures/
+*.log
