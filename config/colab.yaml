@@ -1,0 +1,46 @@
+# Colab configuration: identical to default.yaml except for the hardware knob.
+# Used by experiments/colab_runner.ipynb. Keeping every experiment-relevant
+# value the same as default.yaml is what keeps the B vs C comparison fair
+# across machines: only the hardware changes, never the method.
+
+model:
+  provider: ollama
+  name: qwen2.5-coder
+  temperature: 0.2
+  max_output_tokens: 2048
+  # No num_gpu here: on Colab's T4 (16 GB VRAM) Ollama offloads all layers to
+  # the GPU by default. The local default.yaml pins num_gpu: 0 only because the
+  # dev laptop's 2 GB MX250 crashes the CUDA runner.
+
+generation:
+  runs_per_module: 3
+  seed: 42
+
+loop:
+  max_iterations: 3
+  token_budget_per_module: 60000
+  stop_on_no_gain: true
+
+filters:
+  parse_check: true
+  execute_check: true
+  coverage_gain: true
+  mutation_kill: true
+
+coverage:
+  measure_branches: true
+
+mutation:
+  tool: mutmut
+  modules_per_library_min: 3
+  modules_per_library_max: 5
+
+paths:
+  results_dir: experiments/results
+  figures_dir: experiments/figures
+
+logging:
+  level: INFO
+  log_tokens: true
+  log_model_id: true
+  log_prompt_version: true

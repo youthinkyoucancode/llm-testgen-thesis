@@ -5,6 +5,8 @@ __pycache__/
 .coverage
 htmlcov/
 .mutmut-cache
+mutants/
+.ipynb_checkpoints/
 .pytest_cache/
 experiments/results/
 experiments/figures/

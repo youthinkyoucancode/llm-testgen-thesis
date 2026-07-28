@@ -40,7 +40,7 @@ def main() -> None:
     print(f"model     : {model.provider}/{model.name} (temp={model.temperature}, seed={model.seed})")
     print(f"loop      : max_iterations={loop_cfg.max_iterations}, "
           f"budget={loop_cfg.token_budget_per_module}, stop_on_no_gain={loop_cfg.stop_on_no_gain}")
-    print("running... (real model on CPU, each round is slow)\n")
+    print("running... (calling the real model; each round takes a while)\n")
 
     result = run_pipeline(args.module, model=model, config=loop_cfg, prompts_dir=args.prompts_dir)
 
