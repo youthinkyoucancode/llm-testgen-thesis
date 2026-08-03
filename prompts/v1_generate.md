@@ -1,6 +1,6 @@
 # Prompt template: generation (v1)
 #
-# Placeholders filled at runtime: {module_path}, {source_code}, {signatures}
+# Placeholders filled at runtime: {module_path}, {import_name}, {source_code}, {signatures}
 # Keep this file versioned. Log "v1_generate" with every run for reproducibility.
 
 ## System
@@ -11,6 +11,7 @@ Write pytest unit tests for the following Python module.
 
 Requirements:
 - Use pytest.
+- Import the module under test as `{import_name}` (for example `from {import_name} import ...`).
 - Test the public functions and classes, including edge cases and error paths.
 - Each test must be self-contained and must pass against the given, unmodified module.
 - Do not test private helpers directly.

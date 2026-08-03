@@ -10,4 +10,5 @@ mutants/
 .pytest_cache/
 experiments/results/
 experiments/figures/
+experiments/targets/
 *.log

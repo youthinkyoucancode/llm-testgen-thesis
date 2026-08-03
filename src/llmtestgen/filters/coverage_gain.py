@@ -15,11 +15,14 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from ..target import TargetModule
 
 
 @dataclass
@@ -43,32 +46,61 @@ class CoverageResult:
 
 
 def measure_coverage(
-    test_code: str,
-    target_module: str | Path,
+    tests: str | Path,
+    target_module: TargetModule | str | Path,
     *,
     branch: bool = True,
     timeout: float = 120.0,
 ) -> CoverageResult:
-    """Run ``test_code`` under coverage.py against ``target_module`` and report coverage."""
-    target_module = Path(target_module).resolve()
-    module_name = target_module.stem
-    env = _env_with_module_on_path(target_module.parent)
+    """Run tests under coverage.py and report coverage of the target module.
+
+    ``tests`` is either the test code itself (a string, written to a temp file)
+    or the path of an existing test file or directory (how condition A runs a
+    library's human-written suite). Collection is limited to the target's
+    package (or its directory, for a single-file target), and the report is
+    filtered down to the one module under test.
+    """
+    target = TargetModule.coerce(target_module)
+    source_dir = (
+        target.import_root / target.top_package
+        if target.top_package
+        else target.path.parent
+    )
+    env = _env_with_module_on_path(target.import_root)
 
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         tmp_path = Path(tmp)
-        test_file = tmp_path / "test_candidate.py"
-        test_file.write_text(test_code, encoding="utf-8")
+        if isinstance(tests, str):
+            test_target = tmp_path / "test_candidate.py"
+            test_target.write_text(tests, encoding="utf-8")
+        else:
+            # Stage path-based suites into the neutral workspace instead of
+            # running them in place: pytest puts the test file's own directory
+            # first on sys.path, and a sibling copy of the package next to the
+            # suite (a repo checkout ships one) would shadow the target on
+            # PYTHONPATH, leaving coverage watching files that never import.
+            source = Path(tests).resolve()
+            staged = tmp_path / "tests"
+            if source.is_dir():
+                shutil.copytree(
+                    source, staged, ignore=shutil.ignore_patterns("__pycache__")
+                )
+                test_target = staged
+            else:
+                staged.mkdir()
+                test_target = staged / source.name
+                test_target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
         data_file = tmp_path / ".coverage"
         json_file = tmp_path / "coverage.json"
 
         run_cmd = [
             sys.executable, "-m", "coverage", "run",
             f"--data-file={data_file}",
-            f"--source={target_module.parent}",
+            f"--source={source_dir}",
         ]
         if branch:
             run_cmd.append("--branch")
-        run_cmd += ["-m", "pytest", str(test_file), "-q", "-p", "no:cacheprovider"]
+        run_cmd += ["-m", "pytest", str(test_target), "-q", "-p", "no:cacheprovider"]
 
         try:
             run = subprocess.run(run_cmd, cwd=tmp_path, env=env,
@@ -84,13 +116,20 @@ def measure_coverage(
         if not json_file.exists():
             return CoverageResult(measured=False, raw_output=(run.stdout + run.stderr).strip())
 
-        return _parse_coverage_json(json_file, module_name, raw_output=run.stdout.strip())
+        return _parse_coverage_json(json_file, target.relative_file, raw_output=run.stdout.strip())
 
 
-def _parse_coverage_json(json_file: Path, module_name: str, *, raw_output: str = "") -> CoverageResult:
+def _parse_coverage_json(json_file: Path, relative_file: str, *, raw_output: str = "") -> CoverageResult:
+    """Pick the target module out of the coverage report by path suffix.
+
+    Suffix matching (never bare stem matching) keeps same-named files apart:
+    click and jinja2 both ship a ``parser.py``, and ``test_x.py`` must not match
+    a target ``x.py``.
+    """
     data = json.loads(json_file.read_text(encoding="utf-8"))
     for path, info in data.get("files", {}).items():
-        if Path(path).stem == module_name:
+        normalized = Path(path).as_posix()
+        if normalized == relative_file or normalized.endswith("/" + relative_file):
             summary = info["summary"]
             return CoverageResult(
                 measured=True,

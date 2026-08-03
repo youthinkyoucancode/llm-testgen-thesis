@@ -24,14 +24,24 @@ class Prompt:
     user: str
 
 
-def build_generation_prompt(context: ModuleContext, template_path: str | Path) -> Prompt:
-    """Fill the generation template with the module's source and public signatures."""
+def build_generation_prompt(
+    context: ModuleContext,
+    template_path: str | Path,
+    *,
+    import_name: str | None = None,
+) -> Prompt:
+    """Fill the generation template with the module's source and public signatures.
+
+    ``import_name`` is the dotted name tests must import (``click.types``);
+    when omitted it falls back to the file stem, the single-file convention.
+    """
     template_path = Path(template_path)
     system, user = _split_sections(template_path.read_text(encoding="utf-8"))
     user = _fill(
         user,
         {
             "module_path": context.module_path,
+            "import_name": import_name or Path(context.module_path).stem,
             "source_code": context.source,
             "signatures": context.signatures_block(),
         },
@@ -47,6 +57,7 @@ def build_refinement_prompt(
     uncovered_lines: str,
     surviving_mutants: str = "",
     execution_errors: str = "",
+    import_name: str | None = None,
 ) -> Prompt:
     """Fill the refinement template with the current tests and this round's feedback."""
     template_path = Path(template_path)
@@ -55,6 +66,7 @@ def build_refinement_prompt(
         user,
         {
             "module_path": context.module_path,
+            "import_name": import_name or Path(context.module_path).stem,
             "source_code": context.source,
             "existing_tests": existing_tests,
             "uncovered_lines": uncovered_lines,

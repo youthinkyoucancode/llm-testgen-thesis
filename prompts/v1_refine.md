@@ -1,7 +1,7 @@
 # Prompt template: refinement (v1)
 #
-# Placeholders filled at runtime: {module_path}, {source_code}, {existing_tests},
-#   {uncovered_lines}, {surviving_mutants}, {execution_errors}
+# Placeholders filled at runtime: {module_path}, {import_name}, {source_code},
+#   {existing_tests}, {uncovered_lines}, {surviving_mutants}, {execution_errors}
 # Used in feedback rounds. Log "v1_refine" with every run for reproducibility.
 
 ## System
@@ -16,6 +16,7 @@ Focus on:
 - Fixing these execution errors, if any: {execution_errors}
 
 Constraints:
+- Import the module under test as `{import_name}` (for example `from {import_name} import ...`).
 - All tests must pass against the given, unmodified module.
 - Keep the tests that already work; add to or repair them.
 - Return only the complete, updated test code in a single Python code block.

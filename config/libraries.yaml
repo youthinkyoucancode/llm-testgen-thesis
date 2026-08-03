@@ -1,11 +1,13 @@
 # Target libraries (system under test) and mutation scope.
 #
 # Versions below are the latest stable on PyPI as of 2026-07-01, pinned for
-# reproducibility. Each target library is installed in its OWN isolated
-# environment during experiments (a per-library venv or Docker image), separate
-# from this pipeline's venv. That isolation matters: the pipeline itself depends
-# on click (via typer), so testing click-the-target in the pipeline venv would
-# force click to typer's required version, not the pin recorded here.
+# reproducibility. Isolation between the pipeline's own environment and the
+# target under test works by sys.path precedence: every measurement runs in a
+# subprocess whose PYTHONPATH puts the pinned sdist first, so the sdist shadows
+# anything in the pipeline venv. That matters: the pipeline itself depends on
+# click (via typer), and the sdist pin must win over typer's click, which it
+# does. Mutation workspaces additionally get a full copy of the target package,
+# so mutants never touch the pristine tree.
 #
 # Module selection (Menzel condition 4, pre-registered): executed 2026-08-03 by
 # experiments/select_modules.py BEFORE any experiment run. Full per-module
@@ -24,10 +26,19 @@ selection_rule: >-
   over 1200 SLOC (mutation tractability on the free T4; exclusions disclosed).
   If fewer than 3 modules remain, take all that do.
 
+# Per-library run metadata:
+#   tests_path    where the human suite lives inside the sdist (condition A)
+#   runtime_deps  what the library imports at runtime (installed before runs)
+#   test_deps     what its human suite additionally needs; starts from each
+#                 project's dev requirements and gets corrected by the first
+#                 Colab run if a suite reports a missing module.
 libraries:
   - name: click
     version: "8.4.2"
     repo: https://github.com/pallets/click
+    tests_path: tests
+    runtime_deps: []
+    test_deps: []
     mutation_modules:
       - src/click/types.py          # total CC 359, max 17, 784 SLOC
       - src/click/_termui_impl.py   # total CC 268, max 19, 617 SLOC
@@ -36,6 +47,9 @@ libraries:
   - name: jinja2
     version: "3.1.6"
     repo: https://github.com/pallets/jinja
+    tests_path: tests
+    runtime_deps: [markupsafe]
+    test_deps: [trio]
     mutation_modules:
       - src/jinja2/parser.py        # total CC 424, max 12, 852 SLOC
       - src/jinja2/environment.py   # total CC 372, max 13, 924 SLOC
@@ -44,6 +58,9 @@ libraries:
   - name: markdown
     version: "3.10.2"
     repo: https://github.com/Python-Markdown/markdown
+    tests_path: tests
+    runtime_deps: []
+    test_deps: [pyyaml]
     mutation_modules:
       - markdown/extensions/md_in_html.py   # total CC 239, max 25, 283 SLOC
       - markdown/inlinepatterns.py          # total CC 236, max 33, 489 SLOC
@@ -52,6 +69,9 @@ libraries:
   - name: python-slugify
     version: "8.0.4"
     repo: https://github.com/un33k/python-slugify
+    tests_path: test.py
+    runtime_deps: [text-unidecode]
+    test_deps: []
     mutation_modules:
       - slugify/slugify.py          # total CC 38, max 27, 119 SLOC
       - slugify/special.py          # total CC 4, max 4, 34 SLOC (only 2 eligible modules)
@@ -59,6 +79,9 @@ libraries:
   - name: more-itertools
     version: "11.1.0"
     repo: https://github.com/more-itertools/more-itertools
+    tests_path: tests
+    runtime_deps: []
+    test_deps: []
     mutation_modules:
       - more_itertools/recipes.py   # total CC 181, max 13, 562 SLOC (more.py capped at 2065 SLOC)
 

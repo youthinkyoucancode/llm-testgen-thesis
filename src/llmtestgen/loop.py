@@ -25,6 +25,7 @@ from .filters.execute import execute_tests, keep_passing
 from .filters.parse_check import parse_check
 from .generate import GenerationResult, ModelConfig, generate
 from .prompting import build_generation_prompt, build_refinement_prompt
+from .target import TargetModule
 
 
 @dataclass
@@ -67,7 +68,7 @@ class PipelineResult:
 
 
 def run_pipeline(
-    target_module: str | Path,
+    target_module: TargetModule | str | Path,
     *,
     model: ModelConfig,
     config: LoopConfig,
@@ -75,7 +76,8 @@ def run_pipeline(
     generate_fn=generate,
 ) -> PipelineResult:
     """Run the generate-then-refine loop on one module; return the best suite plus a per-round log."""
-    context = extract_module_context(target_module)
+    target = TargetModule.coerce(target_module)
+    context = extract_module_context(target.path)
     prompts_dir = Path(prompts_dir)
 
     best_code = ""
@@ -87,7 +89,9 @@ def run_pipeline(
 
     for i in range(config.max_iterations):
         if i == 0:
-            prompt = build_generation_prompt(context, prompts_dir / "v1_generate.md")
+            prompt = build_generation_prompt(
+                context, prompts_dir / "v1_generate.md", import_name=target.import_name
+            )
             kind = "generate"
         else:
             prompt = build_refinement_prompt(
@@ -96,6 +100,7 @@ def run_pipeline(
                 existing_tests=best_code or "# no working tests yet",
                 uncovered_lines=_format_uncovered(best_cov),
                 execution_errors=execution_errors,
+                import_name=target.import_name,
             )
             kind = "refine"
 
@@ -113,12 +118,12 @@ def run_pipeline(
             execution_errors = f"syntax error: {parsed.error}"
             note = "did not parse"
         else:
-            executed = execute_tests(parsed.code, target_module)
+            executed = execute_tests(parsed.code, target)
             execution_errors = "\n".join(o.message for o in executed.failed)
             if executed.any_passed:
                 kept = keep_passing(parsed.code, executed)
                 tests_kept = len(executed.passed)
-                cov = measure_coverage(kept, target_module)
+                cov = measure_coverage(kept, target)
             else:
                 note = "no tests passed"
 

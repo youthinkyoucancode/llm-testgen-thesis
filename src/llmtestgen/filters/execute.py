@@ -19,6 +19,8 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ..target import TargetModule
+
 
 @dataclass
 class TestOutcome:
@@ -54,17 +56,18 @@ class ExecuteResult:
 
 def execute_tests(
     test_code: str,
-    target_module: str | Path,
+    target_module: TargetModule | str | Path,
     *,
     timeout: float = 60.0,
 ) -> ExecuteResult:
     """Write ``test_code`` to a temp file and run it with pytest against ``target_module``.
 
-    The target module's directory is put on ``PYTHONPATH`` so the generated
-    ``from <module> import ...`` line resolves. Per-test outcomes are read back
-    from a JUnit XML report, which needs no extra pytest plugin.
+    The target's import root goes on ``PYTHONPATH`` so the generated import
+    line resolves, for a bare single file and for a module inside a package
+    alike. Per-test outcomes are read back from a JUnit XML report, which needs
+    no extra pytest plugin.
     """
-    target_module = Path(target_module).resolve()
+    target = TargetModule.coerce(target_module)
 
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         tmp_path = Path(tmp)
@@ -83,7 +86,7 @@ def execute_tests(
             proc = subprocess.run(
                 cmd,
                 cwd=tmp_path,
-                env=_env_with_module_on_path(target_module.parent),
+                env=_env_with_module_on_path(target.import_root),
                 capture_output=True,
                 text=True,
                 timeout=timeout,

@@ -15,6 +15,7 @@ from pathlib import Path
 from .generate import ModelConfig
 from .loop import LoopConfig, run_pipeline
 from .report import append_csv, build_record, write_json
+from .target import TargetModule
 
 _ROOT = Path(__file__).resolve().parents[2]
 
@@ -22,6 +23,12 @@ _ROOT = Path(__file__).resolve().parents[2]
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the LLM test-generation pipeline on one module.")
     parser.add_argument("module", help="path to the target .py file")
+    parser.add_argument(
+        "--import-root",
+        default=None,
+        help="directory that makes the module importable (for package targets, "
+        "e.g. the sdist's src/); omit for a self-contained single file",
+    )
     parser.add_argument("--condition", default="C", help="experiment condition label (A/B/C)")
     parser.add_argument("--config", default=str(_ROOT / "config" / "default.yaml"))
     parser.add_argument("--prompts-dir", default=str(_ROOT / "prompts"))
@@ -35,14 +42,15 @@ def main() -> None:
     if args.max_iterations is not None:
         loop_cfg.max_iterations = args.max_iterations
 
-    module_name = Path(args.module).stem
-    print(f"module    : {args.module}")
+    target = TargetModule.from_path(args.module, args.import_root)
+    module_name = target.import_name
+    print(f"module    : {args.module} (imports as {module_name})")
     print(f"model     : {model.provider}/{model.name} (temp={model.temperature}, seed={model.seed})")
     print(f"loop      : max_iterations={loop_cfg.max_iterations}, "
           f"budget={loop_cfg.token_budget_per_module}, stop_on_no_gain={loop_cfg.stop_on_no_gain}")
     print("running... (calling the real model; each round takes a while)\n")
 
-    result = run_pipeline(args.module, model=model, config=loop_cfg, prompts_dir=args.prompts_dir)
+    result = run_pipeline(target, model=model, config=loop_cfg, prompts_dir=args.prompts_dir)
 
     print("round-by-round:")
     for r in result.iterations:

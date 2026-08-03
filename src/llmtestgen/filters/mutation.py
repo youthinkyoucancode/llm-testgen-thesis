@@ -22,11 +22,14 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from ..target import TargetModule
 
 # The one-line progress/stats format of `mutmut run` (mutmut 3.x), for example:
 #   253/253  KILLED 217 NOTESTS 0  TIMEOUT 0  SUSPICIOUS 0  SURVIVED 36  SKIPPED 0
@@ -133,18 +136,66 @@ def extract_survivors(results_output: str) -> list[str]:
     return [s for s in survivors if not (s in seen or seen.add(s))]
 
 
+def _prepare_workspace(
+    tests: str | Path, target: TargetModule, workspace: Path
+) -> str:
+    """Lay out a throwaway mutation workspace; return the path mutmut mutates.
+
+    Single-file targets are copied to the workspace root (the original layout).
+    Package targets get their whole top package copied in, so relative imports
+    inside the target keep working while mutmut mutates only the one module.
+    ``tests`` is generated test code (a string) or the path of an existing test
+    file or directory (a library's human-written suite).
+    """
+    if target.top_package:
+        shutil.copytree(
+            target.import_root / target.top_package,
+            workspace / target.top_package,
+            ignore=shutil.ignore_patterns("__pycache__"),
+        )
+        mutate_path = target.relative_file
+    else:
+        (workspace / target.path.name).write_text(
+            target.path.read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        mutate_path = target.path.name
+
+    tests_dir = workspace / "tests"
+    if isinstance(tests, str):
+        tests_dir.mkdir()
+        (tests_dir / "test_generated.py").write_text(tests, encoding="utf-8")
+    elif Path(tests).is_dir():
+        shutil.copytree(
+            Path(tests), tests_dir, ignore=shutil.ignore_patterns("__pycache__")
+        )
+    else:
+        tests_dir.mkdir()
+        source = Path(tests)
+        (tests_dir / source.name).write_text(
+            source.read_text(encoding="utf-8"), encoding="utf-8"
+        )
+
+    (workspace / "pyproject.toml").write_text(
+        "[tool.mutmut]\n"
+        f'paths_to_mutate = ["{mutate_path}"]\n'
+        'tests_dir = ["tests/"]\n',
+        encoding="utf-8",
+    )
+    return mutate_path
+
+
 def run_mutation(
-    test_code: str,
-    target_module: str | Path,
+    tests: str | Path,
+    target_module: TargetModule | str | Path,
     *,
     timeout: float = 1800.0,
 ) -> MutationResult:
-    """Run mutmut over ``target_module`` guarded by ``test_code`` and score it.
+    """Run mutmut over ``target_module`` guarded by ``tests`` and score it.
 
-    Builds a throwaway workspace (module copy at the root, tests under
-    ``tests/``, a minimal ``[tool.mutmut]`` config) so mutmut never touches the
-    real tree, mirroring how ``execute_tests`` isolates pytest. Linux only; on
-    native Windows this raises immediately with a pointer to the Colab notebook.
+    Builds a throwaway workspace (see ``_prepare_workspace``) so mutmut never
+    touches the real tree, mirroring how ``execute_tests`` isolates pytest.
+    Linux only; on native Windows this raises immediately with a pointer to the
+    Colab notebook.
     """
     if sys.platform == "win32":
         raise RuntimeError(
@@ -152,22 +203,11 @@ def run_mutation(
             "Colab notebook (experiments/colab_runner.ipynb) or under WSL."
         )
 
-    target_module = Path(target_module).resolve()
+    target = TargetModule.coerce(target_module)
 
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         workspace = Path(tmp)
-        (workspace / target_module.name).write_text(
-            target_module.read_text(encoding="utf-8"), encoding="utf-8"
-        )
-        tests_dir = workspace / "tests"
-        tests_dir.mkdir()
-        (tests_dir / "test_generated.py").write_text(test_code, encoding="utf-8")
-        (workspace / "pyproject.toml").write_text(
-            "[tool.mutmut]\n"
-            f'paths_to_mutate = ["{target_module.name}"]\n'
-            'tests_dir = ["tests/"]\n',
-            encoding="utf-8",
-        )
+        _prepare_workspace(tests, target, workspace)
 
         env = os.environ.copy()
         existing = env.get("PYTHONPATH", "")
@@ -215,15 +255,21 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Run mutation testing for one module against one test file."
+        description="Run mutation testing for one module against a test file or directory."
     )
     parser.add_argument("module", help="path to the target .py file")
-    parser.add_argument("tests", help="path to the .py file holding the test suite")
+    parser.add_argument("tests", help="path to the test file or directory holding the suite")
+    parser.add_argument(
+        "--import-root",
+        default=None,
+        help="directory that makes the module importable (for package targets, "
+        "e.g. the sdist's src/); omit for a self-contained single file",
+    )
     parser.add_argument("--timeout", type=float, default=1800.0)
     args = parser.parse_args()
 
-    suite = Path(args.tests).read_text(encoding="utf-8")
-    outcome = run_mutation(suite, args.module, timeout=args.timeout)
+    module_target = TargetModule.from_path(args.module, args.import_root)
+    outcome = run_mutation(Path(args.tests), module_target, timeout=args.timeout)
 
     if outcome.total == 0:
         print("warning: could not parse mutmut stats; raw output tail follows")

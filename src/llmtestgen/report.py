@@ -42,6 +42,9 @@ class ExperimentRecord:
     stop_reason: str
     timestamp: str
     per_iteration: list[dict] = field(default_factory=list)
+    # The final suite itself: needed downstream for mutation scoring and for the
+    # qualitative look at what the model actually wrote. JSON only, never CSV.
+    final_tests: str = ""
 
 
 # Columns written to the flat CSV; the nested per-iteration log stays in the JSON only.
@@ -91,6 +94,7 @@ def build_record(
         stop_reason=result.stop_reason,
         timestamp=timestamp or datetime.now(timezone.utc).isoformat(timespec="seconds"),
         per_iteration=[asdict(r) for r in result.iterations],
+        final_tests=result.final_tests,
     )
 
 
