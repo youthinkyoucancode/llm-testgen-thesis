@@ -7,37 +7,61 @@
 # on click (via typer), so testing click-the-target in the pipeline venv would
 # force click to typer's required version, not the pin recorded here.
 #
-# Module-selection rule for mutation testing, pre-specified to avoid cherry-picking
-# (Menzel condition 4): select the 3 to 5 modules with the highest cyclomatic
-# complexity, measured with `radon cc`, excluding test files and __init__.py.
-# Run radon first, then record the chosen modules below BEFORE any mutation run.
+# Module selection (Menzel condition 4, pre-registered): executed 2026-08-03 by
+# experiments/select_modules.py BEFORE any experiment run. Full per-module
+# metrics for every candidate, including the excluded ones, are recorded in
+# experiments/module_selection.json. Two modules were excluded by the disclosed
+# 1200-SLOC tractability cap (click/core.py at 1836 SLOC, jinja2/compiler.py at
+# 1449 SLOC, more_itertools/more.py at 2065 SLOC) and one by the zero-CC floor
+# (slugify/__version__.py, a constants file).
 
-selection_rule: "top 3-5 modules by cyclomatic complexity (radon cc), excluding tests and __init__.py"
+selection_rule: >-
+  Top 3 eligible modules per library by total cyclomatic complexity (radon cc,
+  summed over functions and methods; classes expand to their methods to avoid
+  double counting). Tie-breaks: higher single-block complexity, then more SLOC.
+  Ineligible: __init__.py, __main__.py, conftest.py, anything with "test" in
+  its path, modules with zero total complexity (nothing to mutate), and modules
+  over 1200 SLOC (mutation tractability on the free T4; exclusions disclosed).
+  If fewer than 3 modules remain, take all that do.
 
 libraries:
   - name: click
     version: "8.4.2"
     repo: https://github.com/pallets/click
-    mutation_modules: []      # fill after running radon, before mutation runs
+    mutation_modules:
+      - src/click/types.py          # total CC 359, max 17, 784 SLOC
+      - src/click/_termui_impl.py   # total CC 268, max 19, 617 SLOC
+      - src/click/parser.py         # total CC 157, max 10, 331 SLOC
 
   - name: jinja2
     version: "3.1.6"
     repo: https://github.com/pallets/jinja
-    mutation_modules: []
+    mutation_modules:
+      - src/jinja2/parser.py        # total CC 424, max 12, 852 SLOC
+      - src/jinja2/environment.py   # total CC 372, max 13, 924 SLOC
+      - src/jinja2/runtime.py       # total CC 302, max 15, 617 SLOC
 
   - name: markdown
     version: "3.10.2"
     repo: https://github.com/Python-Markdown/markdown
-    mutation_modules: []
+    mutation_modules:
+      - markdown/extensions/md_in_html.py   # total CC 239, max 25, 283 SLOC
+      - markdown/inlinepatterns.py          # total CC 236, max 33, 489 SLOC
+      - markdown/blockprocessors.py         # total CC 225, max 11, 345 SLOC
 
   - name: python-slugify
     version: "8.0.4"
     repo: https://github.com/un33k/python-slugify
-    mutation_modules: []
+    mutation_modules:
+      - slugify/slugify.py          # total CC 38, max 27, 119 SLOC
+      - slugify/special.py          # total CC 4, max 4, 34 SLOC (only 2 eligible modules)
 
   - name: more-itertools
     version: "11.1.0"
     repo: https://github.com/more-itertools/more-itertools
-    mutation_modules: []
+    mutation_modules:
+      - more_itertools/recipes.py   # total CC 181, max 13, 562 SLOC (more.py capped at 2065 SLOC)
 
-# Finalize the set (target 5 to 8 libraries) with your supervisor.
+# 12 modules total across 5 libraries. The library set itself (5 pure-Python
+# projects with clean unit-test surfaces) was fixed in the exposé; widening it
+# is a supervisor conversation, not a config edit.

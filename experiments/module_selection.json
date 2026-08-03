@@ -1,0 +1,638 @@
+{
+  "rule": "top 3 eligible modules per library by total cyclomatic complexity (radon cc, functions and methods), tie-break max block CC then SLOC; excluded: __init__/__main__/conftest/tests, modules with zero total CC (nothing to mutate), and modules over 1200 SLOC (mutation tractability, disclosed)",
+  "libraries": [
+    {
+      "library": "click",
+      "version": "8.4.2",
+      "package_root": "src/click",
+      "chosen": [
+        "src/click/types.py",
+        "src/click/_termui_impl.py",
+        "src/click/parser.py"
+      ],
+      "all_modules": [
+        {
+          "total_cc": 1165,
+          "max_cc": 47,
+          "blocks": 255,
+          "sloc": 1836,
+          "module": "src/click/core.py",
+          "capped": true
+        },
+        {
+          "total_cc": 359,
+          "max_cc": 17,
+          "blocks": 134,
+          "sloc": 784,
+          "module": "src/click/types.py",
+          "capped": false
+        },
+        {
+          "total_cc": 268,
+          "max_cc": 19,
+          "blocks": 66,
+          "sloc": 617,
+          "module": "src/click/_termui_impl.py",
+          "capped": false
+        },
+        {
+          "total_cc": 157,
+          "max_cc": 10,
+          "blocks": 36,
+          "sloc": 331,
+          "module": "src/click/parser.py",
+          "capped": false
+        },
+        {
+          "total_cc": 148,
+          "max_cc": 21,
+          "blocks": 63,
+          "sloc": 437,
+          "module": "src/click/_compat.py",
+          "capped": false
+        },
+        {
+          "total_cc": 117,
+          "max_cc": 15,
+          "blocks": 48,
+          "sloc": 317,
+          "module": "src/click/utils.py",
+          "capped": false
+        },
+        {
+          "total_cc": 113,
+          "max_cc": 10,
+          "blocks": 49,
+          "sloc": 386,
+          "module": "src/click/shell_completion.py",
+          "capped": false
+        },
+        {
+          "total_cc": 108,
+          "max_cc": 13,
+          "blocks": 44,
+          "sloc": 229,
+          "module": "src/click/exceptions.py",
+          "capped": false
+        },
+        {
+          "total_cc": 102,
+          "max_cc": 23,
+          "blocks": 25,
+          "sloc": 406,
+          "module": "src/click/termui.py",
+          "capped": false
+        },
+        {
+          "total_cc": 81,
+          "max_cc": 31,
+          "blocks": 9,
+          "sloc": 131,
+          "module": "src/click/_textwrap.py",
+          "capped": false
+        },
+        {
+          "total_cc": 67,
+          "max_cc": 7,
+          "blocks": 34,
+          "sloc": 227,
+          "module": "src/click/_winconsole.py",
+          "capped": false
+        },
+        {
+          "total_cc": 67,
+          "max_cc": 7,
+          "blocks": 28,
+          "sloc": 197,
+          "module": "src/click/formatting.py",
+          "capped": false
+        },
+        {
+          "total_cc": 45,
+          "max_cc": 10,
+          "blocks": 21,
+          "sloc": 282,
+          "module": "src/click/decorators.py",
+          "capped": false
+        },
+        {
+          "total_cc": 10,
+          "max_cc": 3,
+          "blocks": 6,
+          "sloc": 28,
+          "module": "src/click/globals.py",
+          "capped": false
+        },
+        {
+          "total_cc": 2,
+          "max_cc": 1,
+          "blocks": 2,
+          "sloc": 12,
+          "module": "src/click/_utils.py",
+          "capped": false
+        }
+      ]
+    },
+    {
+      "library": "jinja2",
+      "version": "3.1.6",
+      "package_root": "src/jinja2",
+      "chosen": [
+        "src/jinja2/parser.py",
+        "src/jinja2/environment.py",
+        "src/jinja2/runtime.py"
+      ],
+      "all_modules": [
+        {
+          "total_cc": 743,
+          "max_cc": 30,
+          "blocks": 216,
+          "sloc": 1449,
+          "module": "src/jinja2/compiler.py",
+          "capped": true
+        },
+        {
+          "total_cc": 424,
+          "max_cc": 12,
+          "blocks": 106,
+          "sloc": 852,
+          "module": "src/jinja2/parser.py",
+          "capped": false
+        },
+        {
+          "total_cc": 372,
+          "max_cc": 13,
+          "blocks": 133,
+          "sloc": 924,
+          "module": "src/jinja2/environment.py",
+          "capped": false
+        },
+        {
+          "total_cc": 302,
+          "max_cc": 15,
+          "blocks": 146,
+          "sloc": 617,
+          "module": "src/jinja2/runtime.py",
+          "capped": false
+        },
+        {
+          "total_cc": 251,
+          "max_cc": 11,
+          "blocks": 89,
+          "sloc": 628,
+          "module": "src/jinja2/nodes.py",
+          "capped": false
+        },
+        {
+          "total_cc": 221,
+          "max_cc": 25,
+          "blocks": 65,
+          "sloc": 558,
+          "module": "src/jinja2/ext.py",
+          "capped": false
+        },
+        {
+          "total_cc": 220,
+          "max_cc": 14,
+          "blocks": 81,
+          "sloc": 882,
+          "module": "src/jinja2/filters.py",
+          "capped": false
+        },
+        {
+          "total_cc": 216,
+          "max_cc": 48,
+          "blocks": 58,
+          "sloc": 622,
+          "module": "src/jinja2/lexer.py",
+          "capped": false
+        },
+        {
+          "total_cc": 182,
+          "max_cc": 12,
+          "blocks": 57,
+          "sloc": 378,
+          "module": "src/jinja2/loaders.py",
+          "capped": false
+        },
+        {
+          "total_cc": 165,
+          "max_cc": 7,
+          "blocks": 76,
+          "sloc": 229,
+          "module": "src/jinja2/idtracking.py",
+          "capped": false
+        },
+        {
+          "total_cc": 161,
+          "max_cc": 25,
+          "blocks": 82,
+          "sloc": 386,
+          "module": "src/jinja2/utils.py",
+          "capped": false
+        },
+        {
+          "total_cc": 108,
+          "max_cc": 13,
+          "blocks": 48,
+          "sloc": 211,
+          "module": "src/jinja2/bccache.py",
+          "capped": false
+        },
+        {
+          "total_cc": 95,
+          "max_cc": 17,
+          "blocks": 30,
+          "sloc": 246,
+          "module": "src/jinja2/sandbox.py",
+          "capped": false
+        },
+        {
+          "total_cc": 42,
+          "max_cc": 7,
+          "blocks": 16,
+          "sloc": 82,
+          "module": "src/jinja2/exceptions.py",
+          "capped": false
+        },
+        {
+          "total_cc": 39,
+          "max_cc": 7,
+          "blocks": 15,
+          "sloc": 84,
+          "module": "src/jinja2/nativetypes.py",
+          "capped": false
+        },
+        {
+          "total_cc": 34,
+          "max_cc": 9,
+          "blocks": 12,
+          "sloc": 44,
+          "module": "src/jinja2/visitor.py",
+          "capped": false
+        },
+        {
+          "total_cc": 25,
+          "max_cc": 12,
+          "blocks": 8,
+          "sloc": 47,
+          "module": "src/jinja2/meta.py",
+          "capped": false
+        },
+        {
+          "total_cc": 24,
+          "max_cc": 9,
+          "blocks": 3,
+          "sloc": 111,
+          "module": "src/jinja2/debug.py",
+          "capped": false
+        },
+        {
+          "total_cc": 16,
+          "max_cc": 3,
+          "blocks": 10,
+          "sloc": 63,
+          "module": "src/jinja2/async_utils.py",
+          "capped": false
+        },
+        {
+          "total_cc": 11,
+          "max_cc": 4,
+          "blocks": 5,
+          "sloc": 25,
+          "module": "src/jinja2/optimizer.py",
+          "capped": false
+        },
+        {
+          "total_cc": 0,
+          "max_cc": 0,
+          "blocks": 0,
+          "sloc": 39,
+          "module": "src/jinja2/defaults.py",
+          "capped": false
+        },
+        {
+          "total_cc": 0,
+          "max_cc": 0,
+          "blocks": 0,
+          "sloc": 19,
+          "module": "src/jinja2/constants.py",
+          "capped": false
+        },
+        {
+          "total_cc": 0,
+          "max_cc": 0,
+          "blocks": 0,
+          "sloc": 4,
+          "module": "src/jinja2/_identifier.py",
+          "capped": false
+        }
+      ]
+    },
+    {
+      "library": "markdown",
+      "version": "3.10.2",
+      "package_root": "markdown",
+      "chosen": [
+        "markdown/extensions/md_in_html.py",
+        "markdown/inlinepatterns.py",
+        "markdown/blockprocessors.py"
+      ],
+      "all_modules": [
+        {
+          "total_cc": 239,
+          "max_cc": 25,
+          "blocks": 37,
+          "sloc": 283,
+          "module": "markdown/extensions/md_in_html.py",
+          "capped": false
+        },
+        {
+          "total_cc": 236,
+          "max_cc": 33,
+          "blocks": 84,
+          "sloc": 489,
+          "module": "markdown/inlinepatterns.py",
+          "capped": false
+        },
+        {
+          "total_cc": 225,
+          "max_cc": 11,
+          "blocks": 67,
+          "sloc": 345,
+          "module": "markdown/blockprocessors.py",
+          "capped": false
+        },
+        {
+          "total_cc": 183,
+          "max_cc": 17,
+          "blocks": 34,
+          "sloc": 278,
+          "module": "markdown/treeprocessors.py",
+          "capped": false
+        },
+        {
+          "total_cc": 176,
+          "max_cc": 14,
+          "blocks": 50,
+          "sloc": 264,
+          "module": "markdown/htmlparser.py",
+          "capped": false
+        },
+        {
+          "total_cc": 141,
+          "max_cc": 6,
+          "blocks": 61,
+          "sloc": 312,
+          "module": "markdown/extensions/footnotes.py",
+          "capped": false
+        },
+        {
+          "total_cc": 139,
+          "max_cc": 14,
+          "blocks": 35,
+          "sloc": 323,
+          "module": "markdown/extensions/toc.py",
+          "capped": false
+        },
+        {
+          "total_cc": 105,
+          "max_cc": 14,
+          "blocks": 19,
+          "sloc": 155,
+          "module": "markdown/extensions/tables.py",
+          "capped": false
+        },
+        {
+          "total_cc": 91,
+          "max_cc": 32,
+          "blocks": 16,
+          "sloc": 116,
+          "module": "markdown/extensions/attr_list.py",
+          "capped": false
+        },
+        {
+          "total_cc": 80,
+          "max_cc": 10,
+          "blocks": 22,
+          "sloc": 197,
+          "module": "markdown/core.py",
+          "capped": false
+        },
+        {
+          "total_cc": 80,
+          "max_cc": 9,
+          "blocks": 42,
+          "sloc": 182,
+          "module": "markdown/util.py",
+          "capped": false
+        },
+        {
+          "total_cc": 76,
+          "max_cc": 14,
+          "blocks": 16,
+          "sloc": 178,
+          "module": "markdown/extensions/codehilite.py",
+          "capped": false
+        },
+        {
+          "total_cc": 73,
+          "max_cc": 10,
+          "blocks": 29,
+          "sloc": 115,
+          "module": "markdown/extensions/abbr.py",
+          "capped": false
+        },
+        {
+          "total_cc": 69,
+          "max_cc": 24,
+          "blocks": 13,
+          "sloc": 133,
+          "module": "markdown/extensions/fenced_code.py",
+          "capped": false
+        },
+        {
+          "total_cc": 57,
+          "max_cc": 13,
+          "blocks": 13,
+          "sloc": 98,
+          "module": "markdown/extensions/admonition.py",
+          "capped": false
+        },
+        {
+          "total_cc": 45,
+          "max_cc": 22,
+          "blocks": 8,
+          "sloc": 111,
+          "module": "markdown/serializers.py",
+          "capped": false
+        },
+        {
+          "total_cc": 41,
+          "max_cc": 17,
+          "blocks": 9,
+          "sloc": 63,
+          "module": "markdown/extensions/def_list.py",
+          "capped": false
+        },
+        {
+          "total_cc": 33,
+          "max_cc": 5,
+          "blocks": 19,
+          "sloc": 151,
+          "module": "markdown/extensions/smarty.py",
+          "capped": false
+        },
+        {
+          "total_cc": 25,
+          "max_cc": 10,
+          "blocks": 7,
+          "sloc": 47,
+          "module": "markdown/extensions/meta.py",
+          "capped": false
+        },
+        {
+          "total_cc": 24,
+          "max_cc": 5,
+          "blocks": 12,
+          "sloc": 55,
+          "module": "markdown/extensions/wikilinks.py",
+          "capped": false
+        },
+        {
+          "total_cc": 24,
+          "max_cc": 5,
+          "blocks": 14,
+          "sloc": 34,
+          "module": "markdown/blockparser.py",
+          "capped": false
+        },
+        {
+          "total_cc": 21,
+          "max_cc": 3,
+          "blocks": 15,
+          "sloc": 58,
+          "module": "markdown/postprocessors.py",
+          "capped": false
+        },
+        {
+          "total_cc": 19,
+          "max_cc": 7,
+          "blocks": 7,
+          "sloc": 27,
+          "module": "markdown/extensions/legacy_attrs.py",
+          "capped": false
+        },
+        {
+          "total_cc": 7,
+          "max_cc": 1,
+          "blocks": 7,
+          "sloc": 30,
+          "module": "markdown/preprocessors.py",
+          "capped": false
+        },
+        {
+          "total_cc": 7,
+          "max_cc": 1,
+          "blocks": 7,
+          "sloc": 26,
+          "module": "markdown/extensions/sane_lists.py",
+          "capped": false
+        },
+        {
+          "total_cc": 6,
+          "max_cc": 6,
+          "blocks": 1,
+          "sloc": 14,
+          "module": "markdown/__meta__.py",
+          "capped": false
+        },
+        {
+          "total_cc": 5,
+          "max_cc": 1,
+          "blocks": 5,
+          "sloc": 18,
+          "module": "markdown/extensions/extra.py",
+          "capped": false
+        },
+        {
+          "total_cc": 3,
+          "max_cc": 1,
+          "blocks": 3,
+          "sloc": 20,
+          "module": "markdown/extensions/legacy_em.py",
+          "capped": false
+        },
+        {
+          "total_cc": 3,
+          "max_cc": 1,
+          "blocks": 3,
+          "sloc": 10,
+          "module": "markdown/extensions/nl2br.py",
+          "capped": false
+        }
+      ]
+    },
+    {
+      "library": "python-slugify",
+      "version": "8.0.4",
+      "package_root": "slugify",
+      "chosen": [
+        "slugify/slugify.py",
+        "slugify/special.py"
+      ],
+      "all_modules": [
+        {
+          "total_cc": 38,
+          "max_cc": 27,
+          "blocks": 2,
+          "sloc": 119,
+          "module": "slugify/slugify.py",
+          "capped": false
+        },
+        {
+          "total_cc": 4,
+          "max_cc": 4,
+          "blocks": 1,
+          "sloc": 34,
+          "module": "slugify/special.py",
+          "capped": false
+        },
+        {
+          "total_cc": 0,
+          "max_cc": 0,
+          "blocks": 0,
+          "sloc": 8,
+          "module": "slugify/__version__.py",
+          "capped": false
+        }
+      ]
+    },
+    {
+      "library": "more-itertools",
+      "version": "11.1.0",
+      "package_root": "more_itertools",
+      "chosen": [
+        "more_itertools/recipes.py"
+      ],
+      "all_modules": [
+        {
+          "total_cc": 849,
+          "max_cc": 23,
+          "blocks": 264,
+          "sloc": 2065,
+          "module": "more_itertools/more.py",
+          "capped": true
+        },
+        {
+          "total_cc": 181,
+          "max_cc": 13,
+          "blocks": 68,
+          "sloc": 562,
+          "module": "more_itertools/recipes.py",
+          "capped": false
+        }
+      ]
+    }
+  ]
+}
