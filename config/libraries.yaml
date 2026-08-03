@@ -32,40 +32,9 @@ selection_rule: >-
 #   test_deps     what its human suite additionally needs; starts from each
 #                 project's dev requirements and gets corrected by the first
 #                 Colab run if a suite reports a missing module.
+# Listed in ascending expected runtime so every session produces records early;
+# the order carries no scientific meaning (every module runs regardless).
 libraries:
-  - name: click
-    version: "8.4.2"
-    repo: https://github.com/pallets/click
-    tests_path: tests
-    runtime_deps: []
-    test_deps: []
-    mutation_modules:
-      - src/click/types.py          # total CC 359, max 17, 784 SLOC
-      - src/click/_termui_impl.py   # total CC 268, max 19, 617 SLOC
-      - src/click/parser.py         # total CC 157, max 10, 331 SLOC
-
-  - name: jinja2
-    version: "3.1.6"
-    repo: https://github.com/pallets/jinja
-    tests_path: tests
-    runtime_deps: [markupsafe]
-    test_deps: [trio]
-    mutation_modules:
-      - src/jinja2/parser.py        # total CC 424, max 12, 852 SLOC
-      - src/jinja2/environment.py   # total CC 372, max 13, 924 SLOC
-      - src/jinja2/runtime.py       # total CC 302, max 15, 617 SLOC
-
-  - name: markdown
-    version: "3.10.2"
-    repo: https://github.com/Python-Markdown/markdown
-    tests_path: tests
-    runtime_deps: []
-    test_deps: [pyyaml]
-    mutation_modules:
-      - markdown/extensions/md_in_html.py   # total CC 239, max 25, 283 SLOC
-      - markdown/inlinepatterns.py          # total CC 236, max 33, 489 SLOC
-      - markdown/blockprocessors.py         # total CC 225, max 11, 345 SLOC
-
   - name: python-slugify
     version: "8.0.4"
     repo: https://github.com/un33k/python-slugify
@@ -84,6 +53,39 @@ libraries:
     test_deps: []
     mutation_modules:
       - more_itertools/recipes.py   # total CC 181, max 13, 562 SLOC (more.py capped at 2065 SLOC)
+
+  - name: markdown
+    version: "3.10.2"
+    repo: https://github.com/Python-Markdown/markdown
+    tests_path: tests
+    runtime_deps: []
+    test_deps: [pyyaml]
+    mutation_modules:
+      - markdown/extensions/md_in_html.py   # total CC 239, max 25, 283 SLOC
+      - markdown/inlinepatterns.py          # total CC 236, max 33, 489 SLOC
+      - markdown/blockprocessors.py         # total CC 225, max 11, 345 SLOC
+
+  - name: jinja2
+    version: "3.1.6"
+    repo: https://github.com/pallets/jinja
+    tests_path: tests
+    runtime_deps: [markupsafe]
+    test_deps: [trio]
+    mutation_modules:
+      - src/jinja2/parser.py        # total CC 424, max 12, 852 SLOC
+      - src/jinja2/environment.py   # total CC 372, max 13, 924 SLOC
+      - src/jinja2/runtime.py       # total CC 302, max 15, 617 SLOC
+
+  - name: click
+    version: "8.4.2"
+    repo: https://github.com/pallets/click
+    tests_path: tests
+    runtime_deps: []
+    test_deps: []
+    mutation_modules:
+      - src/click/types.py          # total CC 359, max 17, 784 SLOC
+      - src/click/_termui_impl.py   # total CC 268, max 19, 617 SLOC
+      - src/click/parser.py         # total CC 157, max 10, 331 SLOC
 
 # 12 modules total across 5 libraries. The library set itself (5 pure-Python
 # projects with clean unit-test surfaces) was fixed in the exposé; widening it
