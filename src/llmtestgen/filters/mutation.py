@@ -136,16 +136,34 @@ def extract_survivors(results_output: str) -> list[str]:
     return [s for s in survivors if not (s in seen or seen.add(s))]
 
 
+def _discoverable_test_name(filename: str) -> str:
+    """Return a filename pytest's default discovery will collect.
+
+    mutmut runs pytest with directory-level selection, and directories are
+    subject to the ``test_*.py`` / ``*_test.py`` discovery patterns. Real
+    suites sometimes break them (python-slugify ships its whole suite as
+    ``test.py``), which silently collects zero tests and voids the mutation
+    score, so such files are staged under a compliant name.
+    """
+    stem = Path(filename).stem
+    if stem.startswith("test_") or stem.endswith("_test"):
+        return filename
+    return "test_human_suite.py"
+
+
 def _prepare_workspace(
     tests: str | Path, target: TargetModule, workspace: Path
 ) -> str:
     """Lay out a throwaway mutation workspace; return the path mutmut mutates.
 
     Single-file targets are copied to the workspace root (the original layout).
-    Package targets get their whole top package copied in, so relative imports
-    inside the target keep working while mutmut mutates only the one module.
-    ``tests`` is generated test code (a string) or the path of an existing test
-    file or directory (a library's human-written suite).
+    Package targets get their whole top package copied in AND listed in
+    mutmut's ``source_paths``: mutmut builds its mutants tree only from
+    ``source_paths``, so the full package must be there or ``import package``
+    breaks during the stats run; ``only_mutate`` then restricts actual
+    mutation to the one target module. ``tests`` is generated test code (a
+    string) or the path of an existing test file or directory (a library's
+    human-written suite).
     """
     if target.top_package:
         shutil.copytree(
@@ -154,11 +172,16 @@ def _prepare_workspace(
             ignore=shutil.ignore_patterns("__pycache__"),
         )
         mutate_path = target.relative_file
+        source_lines = (
+            f'source_paths = ["{target.top_package}"]\n'
+            f'only_mutate = ["{mutate_path}"]\n'
+        )
     else:
         (workspace / target.path.name).write_text(
             target.path.read_text(encoding="utf-8"), encoding="utf-8"
         )
         mutate_path = target.path.name
+        source_lines = f'source_paths = ["{mutate_path}"]\n'
 
     tests_dir = workspace / "tests"
     if isinstance(tests, str):
@@ -171,14 +194,14 @@ def _prepare_workspace(
     else:
         tests_dir.mkdir()
         source = Path(tests)
-        (tests_dir / source.name).write_text(
+        (tests_dir / _discoverable_test_name(source.name)).write_text(
             source.read_text(encoding="utf-8"), encoding="utf-8"
         )
 
     (workspace / "pyproject.toml").write_text(
         "[tool.mutmut]\n"
-        f'paths_to_mutate = ["{mutate_path}"]\n'
-        'tests_dir = ["tests/"]\n',
+        + source_lines
+        + 'pytest_add_cli_args_test_selection = ["tests/"]\n',
         encoding="utf-8",
     )
     return mutate_path

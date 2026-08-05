@@ -54,6 +54,19 @@ def pip_install(packages: list[str]) -> None:
         )
 
 
+def needs_mutation_redo(record: dict, *, skip_mutation: bool) -> bool:
+    """True when a banked record is incomplete and must be rebuilt.
+
+    A suite that covered something but has no mutation score means the mutmut
+    stage silently measured nothing (every human suite hit this on 2026-08-04:
+    workspace config made pytest collect zero tests). Records with an empty
+    suite (0% coverage) legitimately carry no mutation score and stay skipped.
+    """
+    if skip_mutation:
+        return False
+    return record.get("mutation_score") is None and record.get("line_percent", 0) > 0
+
+
 def score_mutation(tests, target: TargetModule, *, timeout: float,
                    results_dir: Path, stem: str) -> float | None:
     """Run mutmut and persist the full counts next to the record."""
@@ -103,9 +116,19 @@ def main() -> None:
 
     def attempt(stem: str, work) -> None:
         nonlocal done, skipped
-        if (results_dir / f"{stem}.json").exists():
-            skipped += 1
-            return
+        existing = results_dir / f"{stem}.json"
+        if existing.exists():
+            try:
+                banked = json.loads(existing.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                banked = {}
+            if not needs_mutation_redo(banked, skip_mutation=args.skip_mutation):
+                skipped += 1
+                return
+            # The rebuilt record replaces the JSON; summary.csv keeps the
+            # superseded row, so the analysis reads the JSONs (or dedupes on
+            # the stem keeping the last row).
+            print(f"  redo {stem}: non-empty suite without a mutation score", flush=True)
         try:
             record = work()
             write_json(record, results_dir / f"{stem}.json")

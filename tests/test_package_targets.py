@@ -142,7 +142,47 @@ def test_mutation_workspace_carries_the_whole_package(tmp_path):
     assert (tmp_path / "samplepkg" / "_helpers.py").exists()      # the relative import target
     assert (tmp_path / "tests" / "test_generated.py").read_text(encoding="utf-8") == GOOD_SUITE
     pyproject = (tmp_path / "pyproject.toml").read_text(encoding="utf-8")
-    assert 'paths_to_mutate = ["samplepkg/textutils.py"]' in pyproject
+    # mutmut builds its mutants tree from source_paths alone, so the whole
+    # package must be in there (sibling imports) with mutation narrowed to
+    # the target module; learned from more-itertools' human suite failing
+    # with "module 'more_itertools' has no attribute 'peekable'" on Colab.
+    assert 'source_paths = ["samplepkg"]' in pyproject
+    assert 'only_mutate = ["samplepkg/textutils.py"]' in pyproject
+    assert 'pytest_add_cli_args_test_selection = ["tests/"]' in pyproject
+    assert "paths_to_mutate" not in pyproject
+    assert "tests_dir" not in pyproject
+
+
+def test_mutation_workspace_config_matches_installed_mutmut(tmp_path, monkeypatch, recwarn):
+    """The installed mutmut must interpret our workspace config as intended."""
+    mutmut_config = pytest.importorskip("mutmut.configuration")
+    _prepare_workspace(GOOD_SUITE, pkg_target(), tmp_path)
+    monkeypatch.chdir(tmp_path)
+    mutmut_config.Config.reset()
+    try:
+        cfg = mutmut_config.Config.get()
+        assert [str(p) for p in cfg.source_paths] == ["samplepkg"]
+        assert cfg.pytest_add_cli_args_test_selection == ["tests/"]
+        assert cfg.should_mutate("samplepkg/textutils.py")
+        assert not cfg.should_mutate("samplepkg/_helpers.py")
+        deprecations = [w for w in recwarn if "deprecated" in str(w.message).lower()]
+        assert not deprecations
+    finally:
+        mutmut_config.Config.reset()
+
+
+def test_mutation_workspace_renames_undiscoverable_suite_files(tmp_path):
+    # python-slugify ships its suite as "test.py", which pytest's default
+    # discovery never collects; staged under a compliant name instead.
+    suite = tmp_path / "src_suite"
+    suite.mkdir()
+    human = suite / "test.py"
+    human.write_text("def test_ok():\n    assert True\n", encoding="utf-8")
+    workspace = tmp_path / "ws"
+    workspace.mkdir()
+    _prepare_workspace(human, pkg_target(), workspace)
+    assert (workspace / "tests" / "test_human_suite.py").exists()
+    assert not (workspace / "tests" / "test.py").exists()
 
 
 def test_mutation_workspace_accepts_a_tests_directory(tmp_path):
@@ -156,6 +196,9 @@ def test_mutation_workspace_single_file_layout_unchanged(tmp_path):
                                      TargetModule.from_path(SINGLE_FILE), tmp_path)
     assert mutate_path == "sample_module.py"
     assert (tmp_path / "sample_module.py").exists()
+    pyproject = (tmp_path / "pyproject.toml").read_text(encoding="utf-8")
+    assert 'source_paths = ["sample_module.py"]' in pyproject
+    assert "only_mutate" not in pyproject
 
 
 # --- prompts name the import explicitly ------------------------------------
