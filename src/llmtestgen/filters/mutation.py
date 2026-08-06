@@ -16,6 +16,15 @@ undetected = survived + suspicious + no_tests (code no test exercises counts
 against the suite), score = detected / (detected + undetected). Skipped mutants
 are excluded. Raw counts are always recorded, so any other convention can be
 recomputed from the logs.
+
+One consequence of that convention: mutmut 3.x aborts before its first progress
+line when the suite runs green but NO test executes any mutated function (its
+stats phase attributes trampoline hits to the currently running test, so code
+exercised only at import time counts as covered by nothing). That outcome is a
+measurement, not an instrument failure: every mutant is untested, so the score
+is 0.0 by the convention above. It is real in this study: python-slugify's
+``special.py`` runs entirely at import (``from .special import *``) and the
+human suite never calls it inside a test.
 """
 
 from __future__ import annotations
@@ -52,6 +61,14 @@ _MUTANT_ID = re.compile(r"[A-Za-z_][\w.]*__mutmut_\d+")
 # Status words that end a "survived" listing section (see extract_survivors).
 _OTHER_STATUS = ("killed", "timed out", "timeout", "suspicious", "skipped", "no tests", "untested")
 
+# mutmut 3.6 exits BEFORE any progress line when the stats run succeeds but no
+# test executed any mutated function (run_stats_collection in its __main__.py).
+# Both wordings ship in 3.6; matching either marks the run "no active tests".
+_NO_ACTIVE_TESTS_MARKERS = (
+    "could not find any test case for any mutant",
+    "no active tests found",
+)
+
 
 @dataclass
 class MutationResult:
@@ -65,6 +82,9 @@ class MutationResult:
     skipped: int = 0
     survivors: list[str] = field(default_factory=list)
     raw_output: str = ""
+    # mutmut exited early: suite green, but no test executes any mutant. The
+    # counts stay zero (mutmut never ran the mutants), yet the score is defined.
+    no_active_tests: bool = False
 
     @property
     def total(self) -> int:
@@ -83,7 +103,13 @@ class MutationResult:
 
     @property
     def score(self) -> float | None:
-        """detected / (detected + undetected), or None when nothing was measured."""
+        """detected / (detected + undetected); None when nothing was measured.
+
+        The no-active-tests early exit scores 0.0: every mutant is untested,
+        and untested mutants count against the suite by the module convention.
+        """
+        if self.no_active_tests:
+            return 0.0
         denominator = self.detected + self.undetected
         if denominator == 0:
             return None
@@ -95,13 +121,15 @@ def parse_run_stats(output: str) -> MutationResult:
 
     The progress line repeats as mutmut works, so the LAST occurrence carries
     the final counts. Returns zeroed counts when no stats line is found (the
-    caller can then inspect ``raw_output``).
+    caller can then inspect ``raw_output``); if the output carries mutmut's
+    no-active-tests early exit, the result is flagged and scores 0.0.
     """
     last = None
     for match in _STATS.finditer(output):
         last = match
     if last is None:
-        return MutationResult(raw_output=output)
+        no_active = any(marker in output for marker in _NO_ACTIVE_TESTS_MARKERS)
+        return MutationResult(raw_output=output, no_active_tests=no_active)
     return MutationResult(
         killed=int(last["killed"]),
         no_tests=int(last["no_tests"]),

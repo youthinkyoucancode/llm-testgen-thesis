@@ -35,7 +35,42 @@ def test_parse_run_stats_handles_missing_stats():
     result = parse_run_stats("mutmut crashed before mutating anything")
     assert result.total == 0
     assert result.score is None
+    assert result.no_active_tests is False
     assert "crashed" in result.raw_output
+
+
+NO_ACTIVE_TESTS_OUTPUT = (
+    "Running stats\n"
+    "Stopping early, because we could not find any test case for any mutant. "
+    "It seems that the selected tests do not cover any code that we mutated.\n"
+    "You can set debug=true to see the executed test names in the output above.\n"
+    "You can use mutmut browse to check which parts of the source code we mutated.\n"
+)
+
+
+def test_no_active_tests_early_exit_scores_zero():
+    # mutmut 3.6 exits before any progress line when the suite runs green but
+    # no test executes a mutated function (python-slugify's special.py: all
+    # execution happens at import). Untested mutants count against the suite,
+    # so this is a measured 0.0, not an instrument failure.
+    result = parse_run_stats(NO_ACTIVE_TESTS_OUTPUT)
+    assert result.no_active_tests is True
+    assert result.total == 0
+    assert result.score == 0.0
+
+
+def test_no_active_tests_alternate_wording_scores_zero():
+    result = parse_run_stats("failed to collect stats, no active tests found\n")
+    assert result.no_active_tests is True
+    assert result.score == 0.0
+
+
+def test_real_stats_line_wins_over_marker_scan():
+    # A run that produced a stats line is parsed normally even if the raw text
+    # elsewhere happened to contain a marker-like phrase.
+    result = parse_run_stats(SAMPLE_RUN_OUTPUT)
+    assert result.no_active_tests is False
+    assert result.total == 253
 
 
 def test_score_convention():

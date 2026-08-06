@@ -61,6 +61,9 @@ def needs_mutation_redo(record: dict, *, skip_mutation: bool) -> bool:
     stage silently measured nothing (every human suite hit this on 2026-08-04:
     workspace config made pytest collect zero tests). Records with an empty
     suite (0% coverage) legitimately carry no mutation score and stay skipped.
+    A recorded 0.0 is likewise final: it is a measured result, including the
+    no-active-tests case (suite exercises the module only at import time), so
+    the redo loop terminates instead of rebuilding it every session.
     """
     if skip_mutation:
         return False
@@ -79,8 +82,9 @@ def score_mutation(tests, target: TargetModule, *, timeout: float,
         "survived": outcome.survived, "skipped": outcome.skipped,
         "total": outcome.total, "score": outcome.score,
         "survivors": outcome.survivors,
+        "no_active_tests": outcome.no_active_tests,
     }
-    if outcome.total == 0:  # parser found no stats line; keep evidence
+    if outcome.total == 0:  # no stats line (error or early exit); keep evidence
         detail["raw_output_tail"] = outcome.raw_output.splitlines()[-15:]
     (results_dir / f"{stem}_mutation.json").write_text(
         json.dumps(detail, indent=2) + "\n", encoding="utf-8"
