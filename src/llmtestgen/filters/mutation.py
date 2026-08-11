@@ -63,10 +63,16 @@ _OTHER_STATUS = ("killed", "timed out", "timeout", "suspicious", "skipped", "no 
 
 # mutmut 3.6 exits BEFORE any progress line when the stats run succeeds but no
 # test executed any mutated function (run_stats_collection in its __main__.py).
-# Both wordings ship in 3.6; matching either marks the run "no active tests".
+# All three wordings mean the same early exit; matching any marks the run
+# "no active tests". The third one comes from the forced-fail self check: mutmut
+# forces every mutated function to fail, reruns the suite, and when the suite
+# still passes green no test reached the target module (seen live on the
+# 2026-08-11 Colab run for python-slugify's special.py, "82 passed" followed by
+# this message).
 _NO_ACTIVE_TESTS_MARKERS = (
     "could not find any test case for any mutant",
     "no active tests found",
+    "Unable to force test failures",
 )
 
 

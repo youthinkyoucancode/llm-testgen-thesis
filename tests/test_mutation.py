@@ -65,6 +65,32 @@ def test_no_active_tests_alternate_wording_scores_zero():
     assert result.score == 0.0
 
 
+def test_forced_fail_self_check_wording_scores_zero():
+    # Observed on the 2026-08-11 Colab run (python-slugify's special.py): the
+    # suite runs green even with every mutated function forced to fail, so no
+    # test reaches the target module. Same semantics as the other early exits.
+    result = parse_run_stats(
+        "..................... [100%]\n"
+        "82 passed in 0.09s\n"
+        "FAILED: Unable to force test failures\n"
+    )
+    assert result.no_active_tests is True
+    assert result.score == 0.0
+
+
+def test_baseline_test_failure_stays_unscored():
+    # A red baseline (a suite test fails before any mutant runs) is an
+    # instrument failure, not a measurement: the score must stay None so the
+    # redo rule picks the record up again after the cause is fixed.
+    result = parse_run_stats(
+        "FAILED tests/test_context.py::test_global_context_object\n"
+        "1 failed, 348 passed, 1 xfailed in 5.55s\n"
+        "failed to collect stats. runner returned 1\n"
+    )
+    assert result.no_active_tests is False
+    assert result.score is None
+
+
 def test_real_stats_line_wins_over_marker_scan():
     # A run that produced a stats line is parsed normally even if the raw text
     # elsewhere happened to contain a marker-like phrase.
