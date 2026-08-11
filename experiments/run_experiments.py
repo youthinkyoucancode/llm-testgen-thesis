@@ -27,6 +27,7 @@ Useful flags:
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import subprocess
 import sys
@@ -43,8 +44,20 @@ from _sdists import fetch_human_tests, fetch_sdist, import_root_for  # noqa: E40
 from llmtestgen.generate import ModelConfig  # noqa: E402
 from llmtestgen.harness.run_conditions import run_condition_a  # noqa: E402
 from llmtestgen.loop import LoopConfig, run_pipeline  # noqa: E402
-from llmtestgen.report import append_csv, build_record, write_json  # noqa: E402
+from llmtestgen.report import (  # noqa: E402
+    ExperimentRecord, append_csv, build_record, write_json,
+)
 from llmtestgen.target import TargetModule  # noqa: E402
+
+
+def record_from_banked(banked: dict) -> ExperimentRecord:
+    """Rehydrate a banked JSON record.
+
+    Keys the current ExperimentRecord does not know are dropped, so records
+    written by an older code version still load after a field is added.
+    """
+    allowed = {f.name for f in dataclasses.fields(ExperimentRecord)}
+    return ExperimentRecord(**{k: v for k, v in banked.items() if k in allowed})
 
 
 def pip_install(packages: list[str]) -> None:
@@ -118,7 +131,7 @@ def main() -> None:
 
     done, skipped, failures = 0, 0, []
 
-    def attempt(stem: str, work) -> None:
+    def attempt(stem: str, work, mutation_fill=None) -> None:
         nonlocal done, skipped
         existing = results_dir / f"{stem}.json"
         if existing.exists():
@@ -129,10 +142,20 @@ def main() -> None:
             if not needs_mutation_redo(banked, skip_mutation=args.skip_mutation):
                 skipped += 1
                 return
-            # The rebuilt record replaces the JSON; summary.csv keeps the
+            # The updated record replaces the JSON; summary.csv keeps the
             # superseded row, so the analysis reads the JSONs (or dedupes on
-            # the stem keeping the last row).
-            print(f"  redo {stem}: non-empty suite without a mutation score", flush=True)
+            # the stem keeping the last row). When the caller provides
+            # mutation_fill, the banked suite and coverage are kept verbatim
+            # and only the mutation score is measured; rebuilding from scratch
+            # here would re-run generation, which is expensive and would
+            # replace a suite whose coverage is already part of the dataset
+            # (that happened to slugify B_s42/C_s42 on 2026-08-11 before this
+            # path existed).
+            if mutation_fill is not None:
+                print(f"  redo {stem}: filling mutation on the banked suite", flush=True)
+                work = lambda: mutation_fill(banked)  # noqa: E731
+            else:
+                print(f"  redo {stem}: non-empty suite without a mutation score", flush=True)
         try:
             record = work()
             write_json(record, results_dir / f"{stem}.json")
@@ -184,7 +207,15 @@ def main() -> None:
                             results_dir=results_dir, stem=f"{name}_A",
                         )
                     return record
-                attempt(f"{name}_A", condition_a)
+
+                def fill_a(banked):
+                    record = record_from_banked(banked)
+                    record.mutation_score = score_mutation(
+                        human_tests, target, timeout=args.mutation_timeout,
+                        results_dir=results_dir, stem=f"{name}_A",
+                    )
+                    return record
+                attempt(f"{name}_A", condition_a, mutation_fill=fill_a)
 
             for seed in seeds:
                 for cond in (c for c in "BC" if c in conditions):
@@ -205,7 +236,20 @@ def main() -> None:
                                 results_dir=results_dir, stem=f"{name}_{cond}_s{seed}",
                             )
                         return record
-                    attempt(f"{name}_{cond}_s{seed}", condition_bc)
+
+                    def fill_bc(banked, cond=cond, seed=seed):
+                        record = record_from_banked(banked)
+                        if not record.final_tests.strip():
+                            raise ValueError(
+                                f"banked record {name}_{cond}_s{seed} has coverage "
+                                "but no suite text; cannot fill mutation"
+                            )
+                        record.mutation_score = score_mutation(
+                            record.final_tests, target, timeout=args.mutation_timeout,
+                            results_dir=results_dir, stem=f"{name}_{cond}_s{seed}",
+                        )
+                        return record
+                    attempt(f"{name}_{cond}_s{seed}", condition_bc, mutation_fill=fill_bc)
 
     print(f"\ncampaign: {done} new records, {skipped} already done, {len(failures)} failures")
     if failures:
