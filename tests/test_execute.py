@@ -55,3 +55,30 @@ def test_keep_passing_drops_only_the_failing_test():
 def test_import_error_yields_no_passes():
     result = execute_tests(IMPORT_ERROR, FIXTURE)
     assert not result.any_passed
+
+
+# A failing assertion whose diff carries characters outside cp1252, as any test
+# against python-slugify does (the module ships Cyrillic and Greek tables).
+#
+# The filter used to run pytest with text=True and no explicit encoding, so the
+# parent decoded the child's output with the platform locale. That is fine while
+# both sides agree, which is why Linux and the Colab campaign never saw it. Set
+# PYTHONIOENCODING=utf-8 and they disagree: the child emits UTF-8, the parent
+# decodes cp1252, UnicodeDecodeError is raised inside subprocess's reader thread,
+# stdout comes back as None, and the filter dies on None.strip(). The env var is
+# set explicitly here so the regression is deterministic instead of depending on
+# whatever encoding the machine running the tests happens to default to.
+NON_LATIN1_OUTPUT = '''\
+from sample_module import slugify
+
+
+def test_wrong_expectation_with_cyrillic():
+    assert slugify("privet") == "\u0451\u044f\u0445 \u03c7\u039e\u03d2"
+'''
+
+
+def test_non_latin1_test_output_does_not_crash_the_filter(monkeypatch):
+    monkeypatch.setenv("PYTHONIOENCODING", "utf-8")
+    result = execute_tests(NON_LATIN1_OUTPUT, FIXTURE)
+    assert not result.any_passed          # the assertion is wrong, so it fails
+    assert result.raw_output is not None  # but the filter still reports it

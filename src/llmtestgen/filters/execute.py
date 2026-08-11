@@ -89,6 +89,13 @@ def execute_tests(
                 env=_env_with_module_on_path(target.import_root),
                 capture_output=True,
                 text=True,
+                # See the note in coverage_gain.py: text=True alone decodes with
+                # the platform locale (cp1252 on Windows), so a target whose
+                # tests echo non-Latin-1 text crashes the reader thread and
+                # leaves stdout as None. Generated tests quote the module under
+                # test, so this fires on any library carrying non-ASCII data.
+                encoding="utf-8",
+                errors="replace",
                 timeout=timeout,
             )
         except subprocess.TimeoutExpired:

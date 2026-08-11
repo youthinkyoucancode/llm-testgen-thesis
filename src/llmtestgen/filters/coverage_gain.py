@@ -115,12 +115,20 @@ def measure_coverage(
         ]
 
         try:
+            # encoding/errors are not optional: text=True alone decodes with the
+            # platform locale, which is cp1252 on a default Windows install. A
+            # target whose tests echo non-Latin-1 text (slugify carries Cyrillic
+            # and Greek) then raises UnicodeDecodeError inside subprocess's
+            # reader thread, leaving stdout as None and crashing the measurement.
+            # errors="replace" keeps a mangled character from ever aborting a run.
             run = subprocess.run(run_cmd, cwd=tmp_path, env=env,
-                                 capture_output=True, text=True, timeout=timeout)
+                                 capture_output=True, text=True,
+                                 encoding="utf-8", errors="replace", timeout=timeout)
             subprocess.run(
                 [sys.executable, "-m", "coverage", "json",
                  f"--data-file={data_file}", "-o", str(json_file)],
-                cwd=tmp_path, env=env, capture_output=True, text=True, timeout=timeout,
+                cwd=tmp_path, env=env, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=timeout,
             )
         except subprocess.TimeoutExpired:
             return CoverageResult(measured=False, raw_output=f"coverage exceeded the {timeout:.0f}s timeout")
