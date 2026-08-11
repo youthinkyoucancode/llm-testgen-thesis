@@ -33,6 +33,7 @@ class ModelConfig:
     seed: int | None = None
     base_url: str | None = None    # for OpenAI-compatible endpoints (Colab / vLLM)
     num_gpu: int | None = None     # Ollama: GPU layers to offload (0 = force CPU-only)
+    num_ctx: int | None = None     # Ollama: context window in tokens. MUST be set explicitly.
 
     @classmethod
     def from_yaml(cls, path: str | Path, *, seed: int | None = None) -> ModelConfig:
@@ -46,6 +47,7 @@ class ModelConfig:
             seed=seed,
             base_url=m.get("base_url"),
             num_gpu=m.get("num_gpu"),
+            num_ctx=m.get("num_ctx"),
         )
 
 
@@ -60,6 +62,7 @@ class GenerationResult:
     completion_tokens: int | None
     latency_s: float
     params: dict = field(default_factory=dict)
+    context_truncated: bool = False   # prompt did not fit the context window
 
     @property
     def total_tokens(self) -> int | None:
@@ -68,8 +71,51 @@ class GenerationResult:
         return self.prompt_tokens + self.completion_tokens
 
 
+# Conservative characters-per-token floor. Measured against qwen2.5-coder on a
+# real target (click/parser.py: 21,321 characters evaluated as 4,989 tokens, so
+# 4.27 chars/token), a chars/4 rule would flag a HEALTHY run as truncated. Eight
+# leaves wide margin for any tokenizer while still catching gross truncation:
+# the same prompt cut to Ollama's default window evaluated 2,050 tokens, far
+# under the 2,665 this floor requires.
+_CHARS_PER_TOKEN_FLOOR = 8
+
+
+def prompt_was_truncated(
+    prompt: Prompt, prompt_tokens: int | None, model: "ModelConfig | None" = None
+) -> bool:
+    """True when the prompt did not reach the model whole.
+
+    Ollama left-truncates a prompt exceeding ``num_ctx`` instead of failing, so
+    an oversized prompt yields a plausible-looking result computed from a
+    fragment of the module. Two independent checks, because neither alone is
+    sufficient:
+
+    * **Headroom.** If the prompt plus the output cap cannot fit inside the
+      configured context window, the run is unsafe whether or not the backend
+      admits it. This is exact arithmetic over known quantities, no heuristic.
+    * **Gross-truncation floor.** If the backend reports implausibly few tokens
+      for the character count, something was dropped. Deliberately loose, so it
+      never fires on a healthy run.
+    """
+    if prompt_tokens is None:
+        return False
+    chars = len(prompt.system) + len(prompt.user)
+    if prompt_tokens < chars // _CHARS_PER_TOKEN_FLOOR:
+        return True
+    if model is not None and model.num_ctx is not None:
+        if prompt_tokens + model.max_output_tokens > model.num_ctx:
+            return True
+    return False
+
+
 def generate(prompt: Prompt, model: ModelConfig) -> GenerationResult:
-    """Dispatch to the configured backend and return the text plus metadata."""
+    """Dispatch to the configured backend and return the text plus metadata.
+
+    Raises if the prompt did not fit the context window. A truncated prompt is
+    not a degraded measurement, it is a measurement of a different input, so it
+    must fail loudly rather than be recorded (the same principle that makes a
+    zero-coverage human suite an error in ``harness.run_conditions``).
+    """
     start = time.perf_counter()
     if model.provider == "ollama":
         text, prompt_tokens, completion_tokens = _generate_ollama(prompt, model)
@@ -80,6 +126,16 @@ def generate(prompt: Prompt, model: ModelConfig) -> GenerationResult:
     else:
         raise ValueError(f"unknown provider: {model.provider!r}")
     latency = time.perf_counter() - start
+
+    truncated = prompt_was_truncated(prompt, prompt_tokens, model)
+    if truncated:
+        raise RuntimeError(
+            f"prompt did not reach the model whole: {prompt_tokens} prompt tokens "
+            f"for {len(prompt.system) + len(prompt.user)} characters, with "
+            f"num_ctx={model.num_ctx!r} and max_output_tokens={model.max_output_tokens}. "
+            f"Raise model.num_ctx above the prompt size plus the output cap."
+        )
+
     return GenerationResult(
         text=text,
         model=model.name,
@@ -87,10 +143,12 @@ def generate(prompt: Prompt, model: ModelConfig) -> GenerationResult:
         prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens,
         latency_s=latency,
+        context_truncated=truncated,
         params={
             "temperature": model.temperature,
             "max_output_tokens": model.max_output_tokens,
             "seed": model.seed,
+            "num_ctx": model.num_ctx,
         },
     )
 
@@ -103,6 +161,13 @@ def _generate_ollama(prompt: Prompt, model: ModelConfig):
         options["seed"] = model.seed
     if model.num_gpu is not None:
         options["num_gpu"] = model.num_gpu
+    if model.num_ctx is not None:
+        # Without this, Ollama applies its own small default and silently drops
+        # whatever does not fit. Measured on ollama 0.32.6 with qwen2.5-coder
+        # (2026-08-11): a 21,321-character prompt evaluated 2,050 tokens unset
+        # versus 4,989 with num_ctx pinned. Target modules run past 12k prompt
+        # tokens, so this must be set explicitly for every real run.
+        options["num_ctx"] = model.num_ctx
     response = ollama.chat(
         model=model.name,
         messages=[

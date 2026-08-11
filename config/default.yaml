@@ -10,6 +10,12 @@ model:
   # This dev laptop's GPU (MX250, 2 GB) crashes Ollama's CUDA runner, so force
   # CPU-only inference here. On a real GPU (e.g. Colab T4) raise this or remove it.
   num_gpu: 0
+  # Context window. Must be set explicitly: left unset, Ollama silently
+  # left-truncates anything past its own small default (measured at ~2048 prompt
+  # tokens on ollama 0.32.6, 2026-08-11), so a large target module gets scored on
+  # a fragment of itself. Keep this identical to colab.yaml so the only
+  # difference between the two files stays the hardware knob.
+  num_ctx: 32768
   # Optional second model for a robustness comparison (costs money if closed):
   # provider: anthropic
   # name: claude-sonnet-4-6

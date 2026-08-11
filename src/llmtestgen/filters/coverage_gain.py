@@ -100,7 +100,19 @@ def measure_coverage(
         ]
         if branch:
             run_cmd.append("--branch")
-        run_cmd += ["-m", "pytest", str(test_target), "-q", "-p", "no:cacheprovider"]
+        run_cmd += [
+            "-m", "pytest", str(test_target), "-q", "-p", "no:cacheprovider",
+            # A real library's suite may contain a module pytest refuses to
+            # collect (markdown ships a helper class named TestSuite that has an
+            # __init__, which pytest reports as a collection error). By default
+            # ONE such module aborts the entire run before any test executes,
+            # and coverage then records only import-time statements: markdown's
+            # condition A looked like 21-28% coverage when the true figure is
+            # ~98%, and md_in_html looked like 0%. Continuing past collection
+            # errors can only ADD executed tests, never remove them, so it makes
+            # the measurement strictly more faithful to what the suite covers.
+            "--continue-on-collection-errors",
+        ]
 
         try:
             run = subprocess.run(run_cmd, cwd=tmp_path, env=env,

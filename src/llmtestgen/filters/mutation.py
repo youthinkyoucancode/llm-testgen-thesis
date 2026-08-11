@@ -226,10 +226,15 @@ def _prepare_workspace(
             source.read_text(encoding="utf-8"), encoding="utf-8"
         )
 
+    # --continue-on-collection-errors for the same reason as in coverage_gain:
+    # one uncollectable module in a real library's suite otherwise aborts the
+    # whole run before any test executes, which silently voids the score rather
+    # than lowering it. mutmut drives pytest by directory, so it is exposed to
+    # exactly the same failure.
     (workspace / "pyproject.toml").write_text(
         "[tool.mutmut]\n"
         + source_lines
-        + 'pytest_add_cli_args_test_selection = ["tests/"]\n',
+        + 'pytest_add_cli_args_test_selection = ["tests/", "--continue-on-collection-errors"]\n',
         encoding="utf-8",
     )
     return mutate_path

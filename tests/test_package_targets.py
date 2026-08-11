@@ -133,6 +133,36 @@ def test_coverage_report_matching_is_suffix_safe(tmp_path):
     assert parsed.line_covered == 5 and parsed.line_total == 9
 
 
+def test_one_uncollectable_module_does_not_void_the_whole_suite(tmp_path):
+    """A suite with an uncollectable module must still measure the tests that do run.
+
+    Regression cover for the condition-A defect found on 2026-08-11: markdown
+    ships a helper class named ``TestSuite`` that carries an ``__init__``, which
+    pytest reports as a collection error. That single error aborted the run
+    before any test executed, so coverage recorded only import-time statements.
+    markdown's own suite scored 21-28% on modules it actually covers to ~98%,
+    and md_in_html scored 0%, which the zero-coverage guardrail caught but the
+    other two silently passed.
+    """
+    suite = tmp_path / "tests"
+    suite.mkdir()
+    (suite / "test_uncollectable.py").write_text(
+        "class TestSuite:\n"
+        "    def __init__(self, name):\n"
+        "        self.name = name\n",
+        encoding="utf-8",
+    )
+    (suite / "test_real.py").write_text(GOOD_SUITE, encoding="utf-8")
+
+    cov = measure_coverage(suite, pkg_target(), timeout=300)
+
+    assert cov.measured, cov.raw_output
+    assert cov.line_covered > 0, (
+        "the collectable tests did not run; one uncollectable module aborted the "
+        f"whole suite again. pytest said:\n{cov.raw_output}"
+    )
+
+
 # --- mutation workspace layout (pure file ops, runs on any OS) -------------
 
 def test_mutation_workspace_carries_the_whole_package(tmp_path):
@@ -148,7 +178,11 @@ def test_mutation_workspace_carries_the_whole_package(tmp_path):
     # with "module 'more_itertools' has no attribute 'peekable'" on Colab.
     assert 'source_paths = ["samplepkg"]' in pyproject
     assert 'only_mutate = ["samplepkg/textutils.py"]' in pyproject
-    assert 'pytest_add_cli_args_test_selection = ["tests/"]' in pyproject
+    # The collection flag rides along here: one uncollectable module in a real
+    # library's suite otherwise aborts pytest before any test runs, which voids
+    # the mutation score instead of lowering it (markdown, condition A).
+    assert ('pytest_add_cli_args_test_selection = '
+            '["tests/", "--continue-on-collection-errors"]') in pyproject
     assert "paths_to_mutate" not in pyproject
     assert "tests_dir" not in pyproject
 
@@ -162,7 +196,9 @@ def test_mutation_workspace_config_matches_installed_mutmut(tmp_path, monkeypatc
     try:
         cfg = mutmut_config.Config.get()
         assert [str(p) for p in cfg.source_paths] == ["samplepkg"]
-        assert cfg.pytest_add_cli_args_test_selection == ["tests/"]
+        assert cfg.pytest_add_cli_args_test_selection == [
+            "tests/", "--continue-on-collection-errors"
+        ]
         assert cfg.should_mutate("samplepkg/textutils.py")
         assert not cfg.should_mutate("samplepkg/_helpers.py")
         deprecations = [w for w in recwarn if "deprecated" in str(w.message).lower()]
