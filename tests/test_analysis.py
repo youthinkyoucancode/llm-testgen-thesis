@@ -43,6 +43,23 @@ def test_recorded_scores_pass_through():
     assert _MOD.effective_mutation(record("m", "C", retained=3, mutation=0.417)) == 0.417
 
 
+def test_failed_condition_a_measurement_is_never_imputed_to_zero():
+    # Condition A leaves tests_retained at 0 because the field counts tests the
+    # PIPELINE retained, and condition A generates nothing. Reading that as an
+    # empty suite would report a mature human suite as killing no mutants. On
+    # the 2026-08-13 data this affected seven of twelve condition-A records.
+    failed = record("markdown.blockprocessors", "A", retained=0, mutation=None, line=97.74)
+    assert _MOD.effective_mutation(failed) is None
+
+
+def test_condition_a_measured_zero_still_passes_through():
+    # slugify.special's human suite genuinely scores 0.0: it exercises the
+    # module only at import, so mutmut finds no test covering any mutant. A
+    # recorded 0.0 is a measurement and must survive.
+    measured = record("slugify.special", "A", retained=0, mutation=0.0, line=100.0)
+    assert _MOD.effective_mutation(measured) == 0.0
+
+
 def test_seed_median_is_the_median_across_seeds():
     records = {42: record("m", "C", 42, line=60.0), 43: record("m", "C", 43, line=70.0),
                44: record("m", "C", 44, line=0.0)}

@@ -62,14 +62,26 @@ def load_records(results_dir: Path) -> list[dict]:
 def effective_mutation(record: dict) -> float | None:
     """Mutation score under the pre-registered empty-suite rule.
 
-    Returns the recorded score, 0.0 for an empty suite, and None for the
-    instrument-failure case (non-empty suite, no score), which the caller
-    must exclude and report.
+    Returns the recorded score, 0.0 for an empty generated suite, and None for
+    the instrument-failure case (no score, and no evidence the suite was
+    empty), which the caller must exclude and report.
+
+    The empty-suite rule is deliberately restricted to conditions B and C. It
+    exists because a GENERATED suite that retained no tests detects no mutants,
+    so scoring it 0.0 keeps modules where single-pass generation produced
+    nothing from dropping out of the comparison. Condition A never generates
+    anything: it measures a library's existing suite, and it leaves
+    ``tests_retained`` at its default of 0 because the field counts tests the
+    pipeline retained, not tests the suite contains. Applying the rule there
+    would read every failed condition-A measurement as a human suite that kills
+    no mutants. That is not a hypothetical: on the 2026-08-13 data it silently
+    turned seven instrument failures into 0.000, including markdown suites that
+    cover over 97% of their target.
     """
     score = record.get("mutation_score")
     if score is not None:
         return float(score)
-    if record.get("tests_retained", 0) == 0:
+    if record.get("condition") in ("B", "C") and record.get("tests_retained", 0) == 0:
         return 0.0
     return None
 
