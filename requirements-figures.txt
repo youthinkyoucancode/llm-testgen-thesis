@@ -1,0 +1,10 @@
+# Figure generation only, deliberately separate from requirements.lock.
+#
+# requirements.lock is the environment the campaign ran in and the thesis
+# numbers came from; re-freezing it after the data freeze would change the
+# record of what produced those numbers. Plotting needs a library that
+# measurement never touched, so it is pinned here instead.
+#
+#     .venv/bin/pip install -r requirements-figures.txt
+#     python experiments/make_figures.py
+matplotlib==3.11.1
