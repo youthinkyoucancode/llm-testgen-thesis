@@ -1,0 +1,6 @@
+click._termui_impl C: seed 42: non-empty suite without mutation score
+markdown.inlinepatterns B: seed 42: non-empty suite without mutation score
+markdown.inlinepatterns B: seed 43: non-empty suite without mutation score
+markdown.inlinepatterns C: seed 42: non-empty suite without mutation score
+markdown.inlinepatterns C: seed 43: non-empty suite without mutation score
+markdown.inlinepatterns C: seed 44: non-empty suite without mutation score

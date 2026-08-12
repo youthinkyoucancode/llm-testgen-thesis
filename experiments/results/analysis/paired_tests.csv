@@ -1,0 +1,4 @@
+metric,n_pairs,n_nonzero,median_B,median_C,W,p,p_holm,rank_biserial
+line_percent,12,5,29.310,29.895,0.0,0.0625,0.1875,1.000
+branch_percent,12,5,0.820,0.820,0.0,0.0625,0.1875,1.000
+mutation_score,10,2,0.000,0.000,0.0,0.5000,0.5000,1.000

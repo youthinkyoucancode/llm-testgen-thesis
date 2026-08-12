@@ -1,0 +1,11 @@
+click.types B s42: 54.45% line with 0 retained tests
+click.types B s43: 66.19% line with 0 retained tests
+click.types B s44: 54.25% line with 0 retained tests
+click.types C s42: 62.35% line with 0 retained tests
+click.types C s43: 66.19% line with 0 retained tests
+click.types C s44: 54.25% line with 0 retained tests
+markdown.blockprocessors B s42: 35.16% line with 0 retained tests
+markdown.blockprocessors B s43: 31.29% line with 0 retained tests
+markdown.blockprocessors C s42: 35.16% line with 0 retained tests
+markdown.blockprocessors C s43: 31.29% line with 0 retained tests
+slugify.slugify C s42: 85.87% line with 0 retained tests

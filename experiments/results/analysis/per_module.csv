@@ -1,0 +1,13 @@
+module,A_line_percent,A_branch_percent,A_mutation_score,B_line_percent,B_branch_percent,B_mutation_score,C_line_percent,C_branch_percent,C_mutation_score
+click._termui_impl,66.41,54.74,0.000,30.12,12.11,0.000,34.75,15.26,n/a
+click.parser,93.60,91.82,0.000,38.00,18.18,0.000,41.20,20.91,0.000
+click.types,91.70,89.84,0.000,54.45,19.53,0.000,62.35,23.44,0.000
+jinja2.environment,88.61,73.56,0.698,47.79,11.49,0.262,48.64,14.94,0.269
+jinja2.parser,96.82,94.24,0.804,0.00,0.00,0.000,0.00,0.00,0.000
+jinja2.runtime,91.75,81.45,0.698,40.00,3.23,0.073,42.89,7.26,0.132
+markdown.blockprocessors,97.74,94.44,0.000,31.29,0.00,0.000,31.29,0.00,0.000
+markdown.extensions.md_in_html,97.96,91.96,0.000,0.00,0.00,0.000,0.00,0.00,0.000
+markdown.inlinepatterns,99.75,95.08,0.000,28.50,1.64,n/a,28.50,1.64,n/a
+more_itertools.recipes,100.00,99.32,0.000,0.00,0.00,0.000,0.00,0.00,0.000
+slugify.slugify,92.39,92.00,0.833,0.00,0.00,0.000,0.00,0.00,0.000
+slugify.special,100.00,100.00,0.000,0.00,0.00,0.000,0.00,0.00,0.000
