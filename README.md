@@ -112,10 +112,16 @@ ollama pull qwen2.5-coder
 PYTHONPATH=src python -m llmtestgen.cli tests/fixtures/sample_module.py --condition C --seed 42
 ```
 
-Reproducing the campaign end to end needs Linux (mutmut) and a GPU, which is what
-`experiments/colab_experiments.ipynb` is for. Open it in Google Colab, set the runtime to
-T4 GPU, and Run all. It clones this repository, installs the pinned environment, pulls the
-model, and writes its records into your own Google Drive. No credentials are needed.
+To watch the pipeline work for real, without installing anything, open
+`experiments/colab_runner.ipynb` in Google Colab, set the runtime to T4 GPU, and Run all.
+It clones this repository, installs the pinned environment, pulls the model, runs the unit
+suite, then runs the pipeline and the mutation filter on the bundled fixture. About ten
+minutes, no credentials, nothing written outside the session.
+
+`experiments/colab_experiments.ipynb` is the campaign itself, the one behind Chapter 5:
+12 modules, 3 seeds, three conditions, with records written to your own Google Drive so a
+dying session loses nothing. Mutation testing dominates the cost and it needs several GPU
+sessions to finish.
 
 ## What is in here
 
