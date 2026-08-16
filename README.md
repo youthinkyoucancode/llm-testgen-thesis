@@ -84,6 +84,39 @@ PYTHONPATH=src python experiments/run_experiments.py --conditions ABC --seeds 42
 PYTHONPATH=src python experiments/analyze_results.py
 ```
 
+## Reproducing this
+
+Two checks need nothing but Python. Neither needs a GPU, a model, or a Google account,
+and together they take about two minutes.
+
+```
+git clone https://github.com/youthinkyoucancode/llm-testgen-thesis.git
+cd llm-testgen-thesis
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.lock
+
+PYTHONPATH=src python -m pytest tests -q                   # the artifact's own suite
+PYTHONPATH=src python experiments/verify_reported_numbers.py
+```
+
+The first runs the pipeline's unit suite. The second recomputes every headline number the
+thesis reports, from the committed tables rather than from the summary the thesis quotes,
+and compares the two: the Wilcoxon statistics, the Holm correction, the effect sizes, the
+empty-suite counts, the token multiples, and the distance from the human ceiling. It exits
+non-zero if any reported value fails to reproduce.
+
+Running the pipeline itself additionally needs a model. On a machine with Ollama:
+
+```
+ollama pull qwen2.5-coder
+PYTHONPATH=src python -m llmtestgen.cli tests/fixtures/sample_module.py --condition C --seed 42
+```
+
+Reproducing the campaign end to end needs Linux (mutmut) and a GPU, which is what
+`experiments/colab_experiments.ipynb` is for. Open it in Google Colab, set the runtime to
+T4 GPU, and Run all. It clones this repository, installs the pinned environment, pulls the
+model, and writes its records into your own Google Drive. No credentials are needed.
+
 ## What is in here
 
 - `src/llmtestgen/` the pipeline, one component per file: context, generate, the four filters,
