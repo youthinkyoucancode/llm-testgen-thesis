@@ -18,3 +18,8 @@ experiments/results/*
 experiments/figures/
 experiments/targets/
 *.log
+
+# Personal build log and plain-language companion. Kept locally, not part of
+# the published artifact: both went stale once the campaign finished.
+CHECKLIST.md
+EXPLAINER.md
