@@ -13,9 +13,12 @@ Given a Python module, the pipeline:
 
 1. Extracts the module's structure with the AST.
 2. Prompts an LLM to generate candidate unit tests.
-3. Filters the candidates through four signals: parse, execute, coverage gain, mutation kill.
+3. Filters the candidates through three gates: parse, execute, coverage gain.
 4. Feeds the uncovered lines back to the model for a bounded number of refinement rounds.
-5. Outputs a filtered pytest suite and a JSON report.
+5. Outputs a filtered pytest suite and a JSON report, then scores it by mutation analysis.
+
+Mutation score is measured once on the retained suite and never feeds the loop: it is post-hoc
+evaluation, not a gate.
 
 Research question: does iterative filtering by automated quality signals produce measurably better
 test suites than single-pass LLM generation? The existing human-written suite is included as a
@@ -30,8 +33,10 @@ and 44:
 - Condition B: single-pass LLM generation (the primary comparison), once per module per seed.
 - Condition C: the full iterative, quality-filtered pipeline, once per module per seed.
 
-B and C are the same code path with the iteration cap changed, so any difference between them is
-caused by the loop rather than by an unrelated implementation choice.
+B and C are the same code path with the iteration cap changed, so no difference between them is an
+artifact of two separate implementations. C is the iterative treatment as a package: feedback, a
+further generation attempt, and best-so-far selection. The comparison does not separate those three,
+and because C keeps its best round it cannot finish behind B on coverage.
 
 Metrics: line coverage, branch coverage, mutation score (mutmut). Analysis: Wilcoxon signed-rank
 test, Holm-Bonferroni correction, matched-pairs rank-biserial effect size. Real-bug detection on
